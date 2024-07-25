@@ -12,3 +12,6 @@ Cargo.lock
 
 # Ignore JSON wallet files
 *wallet.json
+
+# Ignore swap files
+*.swp

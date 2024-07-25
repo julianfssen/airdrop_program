@@ -12,13 +12,13 @@ pub fn bs58_to_wallet() {
     let result = handle.read_line(&mut buffer);
     match result {
         Ok(_) => (),
-        Err(e) => panic!("Problem converting bs58 to wallet: {e:?}")
+        Err(e) => panic!("Problem converting bs58 to wallet byte array: {e:?}")
     }
 
     println!("Your wallet file is:");
     let result = bs58::decode(buffer.trim_end_matches('\n')).into_vec();
     match result {
         Ok(wallet) => println!("{:?}", wallet),
-        Err(e) => panic!("Problem converting bs58 to wallet: {e:?}")
+        Err(e) => panic!("Problem converting bs58 to wallet byte array: {e:?}")
     }
 }

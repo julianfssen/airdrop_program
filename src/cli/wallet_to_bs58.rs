@@ -13,7 +13,7 @@ pub fn wallet_to_bs58() {
     let result = handle.read_line(&mut buffer);
     match result {
         Ok(_) => (),
-        Err(e) => panic!("Problem converting wallet to bs58: {e:?}")
+        Err(e) => panic!("Problem converting wallet file byte array to bs58: {e:?}")
     }
 
     println!("Your wallet file is:");
@@ -26,5 +26,5 @@ pub fn wallet_to_bs58() {
         .collect();
 
     let bs58_wallet = bs58::encode(split).into_string();
-    println!("{:?}", bs58_wallet);
+    println!("Base-58 secret key: {:?}", bs58_wallet);
 }

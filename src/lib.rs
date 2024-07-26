@@ -5,6 +5,7 @@ use {
         system_instruction::transfer,
     },
     solana_sdk::{
+        message::Message,
         native_token::LAMPORTS_PER_SOL,
         signer::keypair::{Keypair, read_keypair_file},
         signer::Signer,
@@ -65,6 +66,34 @@ pub fn transfer_sol() {
     println!("Success! Check out your TX here: https://explorer.solana.com/tx/{}/?cluster=devnet", signature);
 }
 
+pub fn transfer_all_sol() {
+    let keypair = read_keypair_file("dev-wallet.json").expect("Couldn't find wallet file");
+    let to_pubkey = Pubkey::from_str(WBA_PUBKEY_ADDRESS).expect("Failed to parse pubkey");
+
+    let client = RpcClient::new(RPC_URL);
+    let balance = client.get_balance(&keypair.pubkey()).expect("Failed to get wallet balance");
+    let recent_blockhash = client.get_latest_blockhash().expect("Failed to get recent blockhash");
+
+    let message = Message::new_with_blockhash(
+        &[transfer(&keypair.pubkey(), &to_pubkey, balance)],
+        Some(&keypair.pubkey()),
+        &recent_blockhash
+    );
+    let fee = client.get_fee_for_message(&message).expect("Failed to calculate fees");
+
+    let instruction = transfer(&keypair.pubkey(), &to_pubkey, balance - fee);
+    let transaction = Transaction::new_signed_with_payer(
+        &[instruction],
+        Some(&keypair.pubkey()),
+        &[keypair],
+        recent_blockhash
+    );
+
+    let signature = client.send_and_confirm_transaction(&transaction).expect("Failed to send transaction");
+
+    println!("Success! Check out your TX here: https://explorer.solana.com/tx/{}/?cluster=devnet", signature);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -82,6 +111,11 @@ mod tests {
     #[test]
     fn test_transfer_sol() {
         transfer_sol();
+    }
+
+    #[test]
+    fn test_transfer_all_sol() {
+        transfer_all_sol();
     }
 
     // TODO: Refactor this test to not rely on manual stdin

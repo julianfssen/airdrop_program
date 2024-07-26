@@ -9,13 +9,16 @@ use {
         native_token::LAMPORTS_PER_SOL,
         signer::keypair::{Keypair, read_keypair_file},
         signer::Signer,
+        system_program,
         transaction::Transaction,
     },
     std::str::FromStr,
-    crate::cli::{bs58_to_wallet::bs58_to_wallet, wallet_to_bs58::wallet_to_bs58}
+    crate::cli::{bs58_to_wallet::bs58_to_wallet, wallet_to_bs58::wallet_to_bs58},
+    crate::programs::wba_prereq::{WbaPrereqProgram, CompleteArgs}
 };
 
-pub mod cli;
+mod cli;
+mod programs;
 
 const RPC_URL: &str = "https://api.devnet.solana.com";
 const WBA_PUBKEY_ADDRESS: &str = "FyScGJc8PWZGs2XVTZyNdkDyfKmiyvKLuuAUxiHAPPKL";
@@ -94,6 +97,29 @@ pub fn transfer_all_sol() {
     println!("Success! Check out your TX here: https://explorer.solana.com/tx/{}/?cluster=devnet", signature);
 }
 
+pub fn enroll() {
+    let client = RpcClient::new(RPC_URL);
+    let signer = read_keypair_file("wba-wallet.json").expect("Couldn't find wallet file");
+
+    let prereq_pda = WbaPrereqProgram::derive_program_address(&[b"prereq", signer.pubkey().to_bytes().as_ref()]);
+    let complete_args = CompleteArgs {github: b"julianfssen".to_vec()};
+
+    let recent_blockhash = client.get_latest_blockhash().expect("Failed to get recent blockhash");
+
+    let transaction = WbaPrereqProgram::complete(
+        &[&signer.pubkey(), &prereq_pda, &system_program::id()],
+        &complete_args,
+        Some(&signer.pubkey()),
+        &[&signer],
+        recent_blockhash
+    );
+
+    let signature = client.send_and_confirm_transaction(&transaction).expect("Failed to send transaction");
+
+    // Print our transaction out
+    println!("Success! Check out your TX here: https://explorer.solana.com/tx/{}/?cluster=devnet", signature);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -116,6 +142,11 @@ mod tests {
     #[test]
     fn test_transfer_all_sol() {
         transfer_all_sol();
+    }
+
+    #[test]
+    fn test_enroll() {
+        enroll();
     }
 
     // TODO: Refactor this test to not rely on manual stdin
